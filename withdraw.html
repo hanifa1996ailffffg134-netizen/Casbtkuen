@@ -1,37 +1,48 @@
-<!doctype html>
-<html lang="ar" dir="rtl">
+<!DOCTYPE html>
+<html lang="ar">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>بيتكوين كاش - طلب سحب</title>
-<link rel="stylesheet" href="style.css"/>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase.js"></script>
-<script src="app.js"></script>
+  <meta charset="UTF-8">
+  <title>السحب</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="header">طلب سحب</div>
 
-<div class="container">
-  <div class="card">
-    <label class="label">المبلغ</label>
-    <input id="amount" type="number"/>
-    <label class="label">عنوان المحفظة</label>
-    <input id="wallet"/>
-    <button class="btn btn-blue" id="sendBtn">إرسال الطلب</button>
-    <p class="status" id="status"></p>
-  </div>
+<script type="module">
+  import { supabase } from "./supabase.js";
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) window.location.href = "index.html";
+</script>
+
+<div class="box">
+  <h1>💸 طلب سحب</h1>
+
+  <input id="amount" type="number" placeholder="المبلغ بالدولار">
+  <button onclick="requestWithdraw()">إرسال الطلب</button>
+
+  <p id="msg"></p>
+
+  <a href="home.html">⬅️ رجوع</a>
 </div>
 
-<script>
-document.getElementById("sendBtn").onclick=async()=>{
-  const s=await requireAuth(); if(!s) return;
-  const { error } = await supabase.rpc("request_withdrawal",{
-    p_amount:Number(document.getElementById("amount").value||0),
-    p_wallet:document.getElementById("wallet").value
-  });
-  document.getElementById("status").textContent = error?("خطأ: "+error.message):"تم الإرسال ✅";
-};
+<script type="module">
+  import { supabase } from "./supabase.js";
+
+  window.requestWithdraw = async () => {
+    const amount = document.getElementById("amount").value;
+    const msg = document.getElementById("msg");
+
+    const { data: { session } } = await supabase.auth.getSession();
+    const user = session.user;
+
+    const { error } = await supabase.from("withdrawals").insert({
+      user_id: user.id,
+      amount_usd: amount
+    });
+
+    msg.innerText = error ? error.message : "✅ تم إرسال طلب السحب";
+  };
 </script>
+
 </body>
 </html>
