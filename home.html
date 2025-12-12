@@ -1,79 +1,37 @@
-<!doctype html>
-<html lang="ar" dir="rtl">
+<!DOCTYPE html>
+<html lang="ar">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>بيتكوين كاش - الرئيسية</title>
-<link rel="stylesheet" href="style.css"/>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase.js"></script>
-<script src="app.js"></script>
+  <meta charset="UTF-8">
+  <title>الرئيسية</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="header">الرئيسية</div>
 
-<div class="container">
-  <div class="card">
-    <div class="row">
-      <div class="small" id="me">👤 ...</div>
-      <button class="btn btn-ghost" style="min-height:auto;padding:10px 12px;margin-top:0" onclick="logout()">🚪 خروج</button>
-    </div>
-
-    <div class="kpi" style="margin-top:12px">
-      <div class="box"><div class="num" id="points">0</div><div class="cap">النقاط</div></div>
-      <div class="box"><div class="num" id="balance">$0.00</div><div class="cap">الرصيد بالدولار</div></div>
-    </div>
-
-    <button class="btn btn-green" onclick="convert()">💱 تحويل النقاط إلى دولار</button>
-    <a href="withdraw.html" class="btn btn-blue" style="display:block;text-align:center;text-decoration:none;line-height:24px">📤 طلب سحب</a>
-    <a href="admin.html" id="adminLink" class="btn btn-gold" style="display:none;text-align:center;text-decoration:none;line-height:24px">👑 لوحة الأدمن</a>
-
-    <p class="status" id="status"></p>
-    <p class="small">كل مشاهدة إعلان = 3 نقاط • كل نقطة = 1 دولار</p>
-  </div>
-
-  <div class="card">
-    <div class="small">⚡ شحن سريع (تأكيد يدوي)</div>
-    <div class="row">
-      <a class="btn btn-gold" href="payment-proof.html?amount=10">$10</a>
-      <a class="btn btn-gold" href="payment-proof.html?amount=50">$50</a>
-    </div>
-    <div class="row">
-      <a class="btn btn-gold" href="payment-proof.html?amount=100">$100</a>
-      <a class="btn btn-gold" href="payment-proof.html?amount=200">$200</a>
-    </div>
-    <a class="btn btn-gold" href="payment-proof.html?amount=500">$500</a>
-  </div>
-</div>
-
-<div class="nav">
-  <a href="home.html" data-nav="home" class="active"><span class="ico">🏠</span><small>الرئيسية</small></a>
-  <a href="ads.html" data-nav="ads"><span class="ico">📺</span><small>الإعلانات</small></a>
-  <a href="wallet.html" data-nav="wallet"><span class="ico">💼</span><small>المحفظة</small></a>
-  <a href="about.html" data-nav="about"><span class="ico">ℹ️</span><small>من نحن</small></a>
-</div>
-
-<script>
-setNav("home");
-async function load(){
-  const s = await requireAuth(); if(!s) return;
-  document.getElementById("me").textContent="👤 "+(s.user.email||"مستخدم");
-
-  const p = await supabase.from("user_points").select("points").eq("user_id", s.user.id).maybeSingle();
-  if(p.data) document.getElementById("points").textContent = p.data.points ?? 0;
-
-  const b = await supabase.from("user_balance").select("balance").eq("user_id", s.user.id).maybeSingle();
-  if(b.data) document.getElementById("balance").textContent = "$"+(b.data.balance??0);
-
-  if(await isAdminEmail()) document.getElementById("adminLink").style.display="block";
-}
-load();
-
-async function convert(){
-  const { error } = await supabase.rpc("convert_points_to_balance");
-  document.getElementById("status").textContent = error ? ("خطأ: "+error.message) : "تم التحويل ✅";
-  load();
-}
+<script type="module">
+  import { supabase } from "./supabase.js";
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) window.location.href = "index.html";
 </script>
+
+<div class="box">
+  <h1>الصفحة الرئيسية</h1>
+
+  <a href="ads.html">📺 الإعلانات</a><br><br>
+  <a href="wallet.html">💰 محفظتي</a><br><br>
+  <a href="withdraw.html">💸 السحب</a><br><br>
+  <a href="profile.html">👤 الملف الشخصي</a><br><br>
+
+  <button onclick="logout()">تسجيل خروج</button>
+</div>
+
+<script type="module">
+  import { supabase } from "./supabase.js";
+  window.logout = async () => {
+    await supabase.auth.signOut();
+    window.location.href = "index.html";
+  };
+</script>
+
 </body>
 </html>
