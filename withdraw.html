@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>بيتكوين كاش - طلب سحب</title>
+<link rel="stylesheet" href="style.css"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase.js"></script>
+<script src="app.js"></script>
+</head>
+<body>
+<div class="header">طلب سحب</div>
+
+<div class="container">
+  <div class="card">
+    <label class="label">المبلغ</label>
+    <input id="amount" type="number"/>
+    <label class="label">عنوان المحفظة</label>
+    <input id="wallet"/>
+    <button class="btn btn-blue" id="sendBtn">إرسال الطلب</button>
+    <p class="status" id="status"></p>
+  </div>
+</div>
+
+<script>
+document.getElementById("sendBtn").onclick=async()=>{
+  const s=await requireAuth(); if(!s) return;
+  const { error } = await supabase.rpc("request_withdrawal",{
+    p_amount:Number(document.getElementById("amount").value||0),
+    p_wallet:document.getElementById("wallet").value
+  });
+  document.getElementById("status").textContent = error?("خطأ: "+error.message):"تم الإرسال ✅";
+};
+</script>
+</body>
+</html>
