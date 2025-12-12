@@ -9,7 +9,7 @@ window.login = async function () {
 
   const { error } = await supabase.auth.signInWithPassword({
     email,
-    password,
+    password
   });
 
   if (error) {
@@ -28,7 +28,7 @@ window.signup = async function () {
 
   const { error } = await supabase.auth.signUp({
     email,
-    password,
+    password
   });
 
   if (error) {
