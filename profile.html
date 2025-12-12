@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>حسابي</title>
+<link rel="stylesheet" href="style.css"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase.js"></script>
+<script src="app.js"></script>
+</head>
+<body>
+<div class="header">حسابي</div>
+<div class="container">
+  <div class="card">
+    <div class="small" id="email">...</div>
+    <button class="btn btn-red" onclick="logout()">تسجيل خروج</button>
+  </div>
+</div>
+<script>
+(async()=>{
+  const s=await requireAuth(); if(!s) return;
+  document.getElementById("email").textContent=s.user.email;
+})();
+</script>
+</body>
+</html>
