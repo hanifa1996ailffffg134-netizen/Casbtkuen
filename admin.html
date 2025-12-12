@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>لوحة الأدمن</title>
+
+<link rel="stylesheet" href="style.css"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase.js"></script>
+<script src="app.js"></script>
+</head>
+
+<body>
+<div class="header">👑 لوحة تحكم الأدمن</div>
+
+<div class="container">
+  <div class="card">
+    <p class="small">الدخول مسموح فقط لإيميل الأدمن</p>
+    <p class="status" id="status"></p>
+
+    <div class="row">
+      <button class="btn btn-blue" onclick="showTab('users')">👥 المستخدمون</button>
+      <button class="btn btn-blue" onclick="showTab('withdrawals')">📤 السحوبات</button>
+    </div>
+
+    <div class="row">
+      <button class="btn btn-blue" onclick="showTab('deposits')">💳 الإيداعات</button>
+      <button class="btn btn-gold" onclick="showTab('ads')">📺 الإعلانات</button>
+    </div>
+  </div>
+
+  <!-- المستخدمون -->
+  <div class="card" id="tab-users" style="display:none">
+    <div class="small">المستخدمون + الأرصدة</div>
+    <div id="usersList" class="list"></div>
+  </div>
+
+  <!-- السحوبات -->
+  <div class="card" id="tab-withdrawals" style="display:none">
+    <div class="small">طلبات السحب</div>
+    <div id="withList" class="list"></div>
+  </div>
+
+  <!-- الإيداعات -->
+  <div class="card" id="tab-deposits" style="display:none">
+    <div class="small">طلبات الإيداع</div>
+    <div id="depList" class="list"></div>
+  </div>
+
+  <!-- الإعلانات -->
+  <div class="card" id="tab-ads" style="display:none">
+    <div class="small">إضافة إعلان جديد</div>
+
+    <label class="label">عنوان الإعلان</label>
+    <input id="adTitle" placeholder="مثال: إعلان #1"/>
+
+    <label class="label">رابط الفيديو (mp4)</label>
+    <input id="adUrl" placeholder="https://example.com/video.mp4"/>
+
+    <label class="label">نقاط الإعلان</label>
+    <input id="adPts" type="number" value="3"/>
+
+    <button class="btn btn-green" onclick="addAd()">➕ إضافة الإعلان</button>
+
+    <div id="adsList" class="list"></div>
+  </div>
+</div>
+
+<script>
+const statusEl = document.getElementById("status");
+const tabs = ["users","withdrawals","deposits","ads"];
+
+function showTab(name){
+  tabs.forEach(t=>{
+    document.getElementById("tab-"+t).style.display = (t===name) ? "block" : "none";
+  });
+  if(name==="users") loadUsers();
+  if(name==="withdrawals") loadWithdrawals();
+  if(name==="deposits") loadDeposits();
+  if(name==="ads") loadAds();
+}
+
+(async()=>{
+  const s = await requireAuth();
+  if(!s) return;
+
+  if(!(await isAdminEmail())){
+    statusEl.textContent="🚫 غير مصرح لك بالدخول";
+    setTimeout(()=>location.href="home.html",1000);
+    return;
+  }
+  statusEl.textContent="مرحباً أدمن ✅";
+  showTab("deposits");
+})();
+
+/* ===== المستخدمون ===== */
+async function loadUsers(){
+  const { data, error } = await supabase.from("user_balance").select("*");
+  const box = document.getElementById("usersList");
+  box.innerHTML="";
+  if(error){ box.innerHTML="خطأ"; return; }
+
+  data.forEach(u=>{
+    box.innerHTML+=`
+      <div class="item">
+        <div class="title">${u.user_id}</div>
+        <div class="meta">الرصيد: $${u.balance}</div>
+        <input id="bal_${u.user_id}" type="number" placeholder="تعديل الرصيد"/>
+        <button class="btn btn-gold" onclick="updateBalance('${u.user_id}')">حفظ</button>
+      </div>`;
+  });
+}
+
+async function updateBalance(uid){
+  const amount = Number(document.getElementById("bal_"+uid).value||0);
+  const { error } = await supabase.rpc("admin_update_balance",{ target_user: uid, amount });
+  alert(error ? error.message : "تم التعديل ✅");
+  loadUsers();
+}
+
+/* ===== السحوبات ===== */
+async function loadWithdrawals(){
+  const { data } = await supabase.from("withdrawals").select("*").order("id",{ascending:false});
+  const box=document.getElementById("withList"); box.innerHTML="";
+  data.forEach(w=>{
+    box.innerHTML+=`
+      <div class="item">
+        <div class="title">سحب #${w.id} — $${w.amount}</div>
+        <div class="meta">${w.wallet}</div>
+        <span class="badge ${badgeClass(w.status)}">${w.status}</span>
+        <div class="row">
+          <button class="btn btn-green" onclick="approveW(${w.id},'${w.user_id}',${w.amount})">موافقة</button>
+          <button class="btn btn-red" onclick="rejectW(${w.id})">رفض</button>
+        </div>
+      </div>`;
+  });
+}
+
+async function approveW(id,uid,amount){
+  await supabase.from("withdrawals").update({status:"approved"}).eq("id",id);
+  await supabase.rpc("admin_update_balance",{ target_user: uid, amount: -amount });
+  loadWithdrawals();
+}
+async function rejectW(id){
+  await supabase.from("withdrawals").update({status:"rejected"}).eq("id",id);
+  loadWithdrawals();
+}
+
+/* ===== الإيداعات ===== */
+async function loadDeposits(){
+  const { data } = await supabase.from("deposits").select("*").order("id",{ascending:false});
+  const box=document.getElementById("depList"); box.innerHTML="";
+  data.forEach(d=>{
+    box.innerHTML+=`
+      <div class="item">
+        <div class="title">إيداع #${d.id} — $${d.amount_usd}</div>
+        <span class="badge ${badgeClass(d.status)}">${d.status}</span>
+        <div class="row">
+          <button class="btn btn-green" onclick="approveD(${d.id},'${d.user_id}',${d.amount_usd})">موافقة</button>
+          <button class="btn btn-red" onclick="rejectD(${d.id})">رفض</button>
+        </div>
+      </div>`;
+  });
+}
+
+async function approveD(id,uid,amount){
+  await supabase.from("deposits").update({status:"approved"}).eq("id",id);
+  await supabase.rpc("admin_update_balance",{ target_user: uid, amount });
+  loadDeposits();
+}
+async function rejectD(id){
+  await supabase.from("deposits").update({status:"rejected"}).eq("id",id);
+  loadDeposits();
+}
+
+/* ===== الإعلانات ===== */
+async function addAd(){
+  const title=document.getElementById("adTitle").value;
+  const url=document.getElementById("adUrl").value;
+  const pts=Number(document.getElementById("adPts").value||3);
+  if(!url) return alert("ضع رابط الفيديو");
+  await supabase.from("ads").insert({ title, video_url:url, reward_points:pts, is_active:true });
+  loadAds();
+}
+
+async function loadAds(){
+  const { data } = await supabase.from("ads").select("*").order("id",{ascending:false});
+  const box=document.getElementById("adsList"); box.innerHTML="";
+  data.forEach(a=>{
+    box.innerHTML+=`
+      <div class="item">
+        <div class="title">#${a.id} ${a.title||""}</div>
+        <div class="meta">${a.video_url}</div>
+      </div>`;
+  });
+}
+</script>
+</body>
+</html>
