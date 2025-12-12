@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>بيتكوين كاش - إثبات الدفع</title>
+<link rel="stylesheet" href="style.css"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase.js"></script>
+<script src="app.js"></script>
+</head>
+<body>
+<div class="header">إثبات الدفع</div>
+
+<div class="container">
+  <div class="card">
+    <label class="label">المبلغ بالدولار</label>
+    <input id="amount" type="number"/>
+
+    <label class="label">رابط صورة/إثبات (اختياري)</label>
+    <input id="proofUrl" type="url"/>
+
+    <button class="btn btn-green" id="sendBtn">إرسال</button>
+    <p class="status" id="status"></p>
+  </div>
+</div>
+
+<script>
+document.getElementById("sendBtn").onclick=async()=>{
+  const s=await requireAuth(); if(!s) return;
+  const amount=Number(document.getElementById("amount").value||0);
+  const proof=document.getElementById("proofUrl").value||null;
+  if(amount<=0){ document.getElementById("status").textContent="اكتب مبلغ صحيح"; return; }
+  const { error } = await supabase.from("deposits").insert({
+    user_id:s.user.id, amount_usd:amount, proof_url:proof, status:"pending"
+  });
+  document.getElementById("status").textContent = error?("خطأ: "+error.message):"تم الإرسال ✅";
+};
+</script>
+</body>
+</html>
