@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>بيتكوين كاش - الإعلانات</title>
+<link rel="stylesheet" href="style.css"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase.js"></script>
+<script src="app.js"></script>
+</head>
+<body>
+<div class="header">الإعلانات</div>
+
+<div class="container">
+  <div class="card">
+    <div class="small">شاهد الفيديو للنهاية ثم اضغط تمّت المشاهدة</div>
+    <p class="status" id="status"></p>
+  </div>
+  <div id="list" class="list"></div>
+</div>
+
+<div class="nav">
+  <a href="home.html" data-nav="home"><span class="ico">🏠</span><small>الرئيسية</small></a>
+  <a href="ads.html" data-nav="ads" class="active"><span class="ico">📺</span><small>الإعلانات</small></a>
+  <a href="wallet.html" data-nav="wallet"><span class="ico">💼</span><small>المحفظة</small></a>
+  <a href="about.html" data-nav="about"><span class="ico">ℹ️</span><small>من نحن</small></a>
+</div>
+
+<script>
+setNav("ads");
+const listEl = document.getElementById("list");
+const statusEl = document.getElementById("status");
+
+async function loadAds(){
+  const s = await requireAuth(); if(!s) return;
+  const { data, error } = await supabase.from("ads").select("*").eq("is_active", true).order("id",{ascending:false});
+  if(error){ statusEl.textContent="خطأ: "+error.message; return; }
+  listEl.innerHTML="";
+  if(!data || data.length===0){ listEl.innerHTML='<div class="item"><div class="title">لا يوجد إعلانات</div></div>'; return; }
+
+  data.forEach(ad=>{
+    const el=document.createElement("div");
+    el.className="item";
+    el.innerHTML=`
+      <div class="top">
+        <div>
+          <div class="title">📺 ${ad.title||("إعلان #"+ad.id)}</div>
+          <div class="meta">الربح: ${ad.reward_points||3} نقاط (مرة واحدة)</div>
+        </div>
+        <span class="badge pending" id="b-${ad.id}">جاهز</span>
+      </div>
+      <video id="v-${ad.id}" controls playsinline src="${ad.video_url}"></video>
+      <button class="btn btn-green" id="btn-${ad.id}" disabled>تمّت المشاهدة ✅</button>
+    `;
+    listEl.appendChild(el);
+
+    const vid=document.getElementById(`v-${ad.id}`);
+    const btn=document.getElementById(`btn-${ad.id}`);
+    const badge=document.getElementById(`b-${ad.id}`);
+
+    vid.addEventListener("ended",()=>{ btn.disabled=false; badge.textContent="انتهى"; badge.className="badge approved"; });
+    btn.addEventListener("click", async ()=>{
+      btn.disabled=true; badge.textContent="جارٍ الحفظ...";
+      const { error } = await supabase.rpc("watch_ad_once",{ p_ad_id: ad.id });
+      if(error){ badge.textContent="مرفوض"; badge.className="badge rejected"; statusEl.textContent="خطأ: "+error.message; return; }
+      badge.textContent="تم ✅"; badge.className="badge approved"; statusEl.textContent="تم إضافة النقاط ✅";
+    });
+  });
+}
+loadAds();
+</script>
+</body>
+</html>
