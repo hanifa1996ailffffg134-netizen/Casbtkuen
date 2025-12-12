@@ -1,6 +1,8 @@
 import { supabase } from "./supabase.js";
 
-window.login = async function () {
+alert("auth.js شغال");
+
+window.login = async () => {
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
   const msg = document.getElementById("msg");
@@ -9,7 +11,7 @@ window.login = async function () {
 
   const { error } = await supabase.auth.signInWithPassword({
     email,
-    password
+    password,
   });
 
   if (error) {
@@ -19,7 +21,7 @@ window.login = async function () {
   }
 };
 
-window.signup = async function () {
+window.signup = async () => {
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
   const msg = document.getElementById("msg");
@@ -28,12 +30,13 @@ window.signup = async function () {
 
   const { error } = await supabase.auth.signUp({
     email,
-    password
+    password,
   });
 
   if (error) {
     msg.innerText = error.message;
   } else {
-    msg.innerText = "✅ تم إنشاء الحساب، يمكنك تسجيل الدخول الآن";
+    msg.innerText = "✅ تم إنشاء الحساب";
+    window.location.href = "home.html";
   }
 };
